@@ -7,6 +7,8 @@ const path = require('path');
 const app = express();
 // レンプレートエンジンを指定
 app.set('view engine', 'ejs');
+// 静的ファイルを持つディレクトリを設定
+app.use('/static', express.static(path.join(__dirname, 'public')));
 
 // redisの接続情報
 const redis = new Redis({
