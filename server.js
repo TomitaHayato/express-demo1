@@ -1,63 +1,85 @@
-// expressの基本処理
 const express = require('express');
+const Redis = require('ioredis');
 
-// expressのデフォルト関数を実行し、サーバ用のインスタンスを生成
 const app = express();
 
-// ルート作成
-// app.get(path, ミドルウェア1, ミドルウェア2, ミドルウェア3, ...)
-const putLog = (req, res, next) => {
-  console.log('GETリクエストを受け付けました');
-  console.log(req.method, req.url);
-  next();
+// redisの接続情報
+const redis = new Redis({
+  port: 6379,
+  host: 'localhost',
+  password: process.env.REDIS_PASSWORD,
+  enableOfflineQueue: false,
+});
+
+// DBのデータ初期化処理
+const initUserData = async() => {
+  await Promise.all([
+    redis.set('users:1', JSON.stringify({ id: 1, name: 'a1' })),
+    redis.set('users:2', JSON.stringify({ id: 2, name: 'b2' })),
+    redis.set('users:3', JSON.stringify({ id: 3, name: 'c3' })),
+    redis.set('users:4', JSON.stringify({ id: 4, name: 'd4' })),
+    redis.set('users:5', JSON.stringify({ id: 5, name: 'e5' }))
+  ])
 }
 
-const putLogCommon = (req, res, next) => {
-  console.log('OK? OK!');
-  next();
-}
-// すべてのPath共通のルーティング
-app.use(putLogCommon);
-
-app.get('/', 
-  (req, res, next) => {
-    console.log('ルートパスにアクセスです!!');
-    next();
-  },
+app.get('/',
   (req, res) => {
-    res.status(200).send('ようこそ!')
-  },
+    res.status(200).send('ルートページ');
+  }
 );
 
 app.get('/user/:id',
-  putLog,
-  (req, res) => {
-    const userId = req.params.id;
-    res.status(200).send(`id:${userId}のユーザーページ`);
+  async(req, res) => {
+    try{
+      const userId = `users:${req.params.id}`;
+      const data = await redis.get(userId);
+      const user = JSON.parse(data);
+      res.status(200).send(user);
+    } catch(e) {
+      console.error(e);
+      res.status(500).send('エラー');
+    } 
   }
 );
 
-const errorThrow = (req, res, next) => {
-  next(new Error('ミドルウェアからのエラー発生'));
-}
+app.get('/users',
+  async(req, res) => {
+    try{
+      const stream = redis.scanStream({
+        match: 'users:*',
+        count: 2, // 2つずつデータを取得
+      });
 
-app.get('/err',
-  errorThrow,
-  (req, res) => {
-    res.status(200).send(req.url);
-  }
+      const users = [];
+      // streamで取得した
+      for await (const resultKeys of stream) {
+        for await (const key of resultKeys) {
+          const val = await redis.get(key);
+          const user = JSON.parse(val);
+          users.push(user);
+        }
+      }
+      res.status(200).json(users);
+    } catch(e){
+      console.error(e);
+      res.status(500).send('エラー：500'); 
+    }
+  },
 )
 
-// ポート開放
-// app.listen(port, 起動時に実行されるCallback)
-app.listen(3000, () => {
-  console.log('サーバ起動！！');
+// redisのイベントハンドリング
+// 'ready'は、redisと接続が完了した際に発生するイベント。onceは、イベントに対して1度だけCallbackを実行する
+redis.once('ready', async() => {
+  try{
+    await initUserData();
+    app.listen(3000);
+  } catch(e) {
+    console.log(e);
+    process.exit(1);
+  }
+})
+
+redis.on('error', (e) => {
+  console.log(e);
+  process.exit(2);
 });
-
-// 包括的なエラーハンドリング
-app.use((e, req, res, next) => {
-  console.log('あかーーーーーーーーーん');
-  res.status(500).send('エラーがありました');
-});
-
-
