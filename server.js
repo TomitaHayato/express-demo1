@@ -1,7 +1,12 @@
+'use strict'
+
 const express = require('express');
 const Redis = require('ioredis');
+const path = require('path');
 
 const app = express();
+// レンプレートエンジンを指定
+app.set('view engine', 'ejs');
 
 // redisの接続情報
 const redis = new Redis({
@@ -24,7 +29,7 @@ const initUserData = async() => {
 
 app.get('/',
   (req, res) => {
-    res.status(200).send('ルートページ');
+    res.status(200).send('ルートページ！！！');
   }
 );
 
@@ -59,7 +64,8 @@ app.get('/users',
           users.push(user);
         }
       }
-      res.status(200).json(users);
+      // htmlをレンダリング
+      res.status(200).render(path.join(__dirname, 'views', 'index.ejs'), { users, });
     } catch(e){
       console.error(e);
       res.status(500).send('エラー：500'); 
