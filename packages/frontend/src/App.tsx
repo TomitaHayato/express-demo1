@@ -1,80 +1,29 @@
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
-import { useEffect, useState } from 'react'
-import { User } from './types/user';
+import { BrowserRouter as Router, Route, Routes, Link } from "react-router-dom";
+import Users from "./Users";
 
-type Props = {
-  id?: number,
-  name: string,
-}
-
-const fetchUsers = async() => {
-  const usersData = await fetch('/api/users');
-  const usersJson = usersData.json();
-  return usersJson;
-}
-
-function UserItem({ name }: Props) {
+function Top() {
   return(
-    <li>{name}</li>
+    <div>
+      <h1>Top Page</h1>
+    </div>
   )
 }
 
 export default function App() {
-  const [inputText, setInputText] = useState<string>('');
-  const [users, setUsers] = useState<User[]>([]);
-
-  useEffect(() => {
-    fetchUsers()
-      .then(res => {
-        const newUsers: User[] = [...res.users];
-        setUsers(newUsers);
-        console.log(newUsers);
-      })
-      .catch(err => console.log(err));
-  }, []);
-
-  const hundleSubmit = (e: 	React.FormEvent<HTMLFormElement>): void => {
-    e.preventDefault();
-    const newUser: User = {
-      name: inputText,
-    }
-
-    setUsers([...users, newUser]);
-    setInputText('');
-  }
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
-    setInputText(e.target.value);
-  }
-
-  return (
-    <>
-      <div className='App'>
-        <ul>
-          {
-            users.map((user: User) => {
-              return <UserItem key={user.name} name={user.name}/>;
-            })
-          }
-        </ul>
-
-        <form onSubmit={hundleSubmit}>
-          <input type="text" onChange={handleChange} value={inputText}/>
-          <button type='submit'>追加</button>
-        </form>
-      </div>
-
+  return(
+    <Router>
       <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
+        <nav>
+          <ul>
+            <li><Link to='/'>Top</Link></li>
+            <li><Link to='/users'>Users</Link></li>
+          </ul>
+        </nav>
       </div>
-    </>
+      <Routes>
+        <Route path='/users' element={<Users />}/>
+        <Route path='/' element={<Top />}/>
+      </Routes>
+    </Router>
   )
 }
-
