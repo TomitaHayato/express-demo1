@@ -31,12 +31,13 @@ app.get('/user/:id',
   }
 );
 
-app.get('/users',
+app.get('/api/users',
   async(req, res) => {
     try{
-      const locals = await userHundler.getUsers(req);
+      const users = await userHundler.getUsers(req);
       // htmlをレンダリング
-      res.status(200).render(path.join(__dirname, 'views', 'index.ejs'), locals);
+      // res.status(200).render(path.join(__dirname, 'views', 'users.ejs'), users);
+      res.status(200).json(users);
     } catch(e){
       console.error(e);
       res.status(500).send('エラー：500'); 

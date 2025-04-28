@@ -1,12 +1,18 @@
 import reactLogo from './assets/react.svg'
 import viteLogo from '/vite.svg'
 import './App.css'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { User } from './types/user';
-import { usersInit } from './initials/user';
 
 type Props = {
+  id?: number,
   name: string,
+}
+
+const fetchUsers = async() => {
+  const usersData = await fetch('/api/users');
+  const usersJson = usersData.json();
+  return usersJson;
 }
 
 function UserItem({ name }: Props) {
@@ -17,7 +23,17 @@ function UserItem({ name }: Props) {
 
 export default function App() {
   const [inputText, setInputText] = useState<string>('');
-  const [users, setUsers] = useState<User[]>(usersInit)
+  const [users, setUsers] = useState<User[]>([]);
+
+  useEffect(() => {
+    fetchUsers()
+      .then(res => {
+        const newUsers: User[] = [...res.users];
+        setUsers(newUsers);
+        console.log(newUsers);
+      })
+      .catch(err => console.log(err));
+  }, []);
 
   const hundleSubmit = (e: 	React.FormEvent<HTMLFormElement>): void => {
     e.preventDefault();
